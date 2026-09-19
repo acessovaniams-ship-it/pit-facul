@@ -6,6 +6,11 @@ import { sites } from "./build/sites-vite-plugin";
 
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   "00000000-0000-4000-8000-000000000000";
+// Na publicação fora do ambiente do Sites, informe o ID do banco D1 pela
+// variável de ambiente do Cloudflare. O valor padrão mantém o preview local.
+const d1DatabaseId =
+  process.env.CLOUDFLARE_D1_DATABASE_ID ??
+  SITE_CREATOR_PLACEHOLDER_DATABASE_ID;
 
 const { d1, r2 } = hostingConfig;
 
@@ -21,7 +26,7 @@ const localBindingConfig = {
         {
           binding: d1,
           database_name: "site-creator-d1",
-          database_id: SITE_CREATOR_PLACEHOLDER_DATABASE_ID,
+          database_id: d1DatabaseId,
         },
       ]
     : [],
