@@ -1,4 +1,5 @@
 "use client";
+import LoginForm from "./login-form";
 
 import {
   FormEvent,
@@ -161,7 +162,7 @@ async function api<T>(url: string, options?: RequestInit): Promise<T> {
     },
   });
   const result = (await response.json()) as T & { error?: string };
-  if (!response.ok) throw new Error(result.error ?? "Não foi possível concluir a operação.");
+  if (!response.ok) throw Object.assign(new Error(result.error ?? "Não foi possível concluir a operação."), { status: response.status });
   return result;
 }
 
@@ -189,6 +190,7 @@ export default function ShopClient() {
   const [data, setData] = useState<ShopData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [needsLogin, setNeedsLogin] = useState(false);
   const [search, setSearch] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -207,8 +209,13 @@ export default function ShopClient() {
     try {
       const result = await api<ShopData>("/api/shop");
       setData(result);
+      setNeedsLogin(false);
       setError("");
     } catch (requestError) {
+      if ((requestError as { status?: number }).status === 401) {
+        setData(null); setNeedsLogin(true); setCart([]); setAdminData(null);
+        setAccountOpen(false); setAdminOpen(false); setCartOpen(false);
+      }
       setError(requestError instanceof Error ? requestError.message : "Erro ao carregar a loja.");
     } finally {
       setLoading(false);
@@ -432,6 +439,8 @@ export default function ShopClient() {
       </main>
     );
   }
+
+  if (needsLogin) return <LoginForm onSuccess={refresh} />;
 
   if (!data || error) {
     return (
@@ -828,6 +837,10 @@ export default function ShopClient() {
                 <div className="grid size-12 place-items-center rounded-full bg-[#5b1932] text-white"><UserRound /></div>
                 <h3 className="mt-4 text-xl font-semibold">{data.user.name}</h3>
                 <p className="mt-1 text-[#725f55]">{data.user.email}</p>
+                <Button className="mt-4" variant="outline" onClick={async () => {
+                  try { await api("/api/auth", { method: "POST", body: JSON.stringify({ action: "logout" }) }); await refresh(); }
+                  catch { toast.error("Não foi possível sair. Tente novamente."); }
+                }}>Sair da conta</Button>
                 <Badge className="mt-4 bg-[#efe0e6] text-[#5b1932]">{data.user.role === "admin" ? "Administradora" : "Cliente"}</Badge>
               </div>
             </TabsContent>
@@ -948,12 +961,12 @@ function AdminDialog({
               <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
             </TabsList>
             <TabsContent value="visao" className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {[
+              {([
                 ["Pedidos", data.metrics.order_count, ClipboardList],
                 ["Clientes", data.metrics.customer_count, UserRound],
                 ["Faturamento simulado", money(data.metrics.revenue_cents), Sparkles],
                 ["Produtos ativos", data.metrics.active_products, Store],
-              ].map(([label, value, Icon]) => (
+              ] as const).map(([label, value, Icon]) => (
                 <div key={String(label)} className="rounded-2xl border border-[#eadfd9] bg-[#fffaf6] p-5">
                   <Icon className="size-5 text-[#8b6d28]" />
                   <p className="mt-5 text-sm text-[#725f55]">{String(label)}</p>

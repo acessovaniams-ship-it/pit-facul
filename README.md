@@ -8,8 +8,8 @@ Disponibilizar uma loja digital de cupcakes gourmet em que clientes possam consu
 
 ## Funcionalidades
 
-- Cadastro automático do perfil no primeiro acesso autenticado.
-- Login protegido pela autenticação da plataforma.
+- Cadastro e login próprios com e-mail e senha (mínimo de 12 caracteres).
+- Senhas protegidas por scrypt; sessões revogáveis em cookies HttpOnly/Secure.
 - Catálogo com busca, detalhes, ingredientes, preço e avaliações.
 - Favoritos por usuário.
 - Carrinho com alteração de quantidades e cálculo do total.
@@ -26,11 +26,21 @@ Disponibilizar uma loja digital de cupcakes gourmet em que clientes possam consu
 - Tailwind CSS e componentes Shadcn.
 - Cloudflare Workers e D1 SQLite.
 - Drizzle para definição do esquema e geração de migrações.
-- Sites para hospedagem.
+- Hospedagem na conta Cloudflare, em workers.dev.
 
 ## Arquitetura
 
-O front-end React consome rotas HTTP internas. As rotas aplicam validações e regras de negócio antes de consultar o D1 por instruções preparadas. A identidade autenticada é usada como chave estável do usuário. O primeiro perfil criado recebe a função administrativa; os demais recebem a função de cliente.
+O front-end React consome rotas HTTP internas. As rotas validam sessões no D1 e aplicam regras de negócio no servidor. Cabeçalhos de identidade enviados pelo navegador não são aceitos. Todos os cadastros recebem a função de cliente; a administração é concedida explicitamente pelo responsável pelo banco.
+
+## Ativar o login na Cloudflare
+
+1. No banco D1 já preparado, execute o conteúdo de `cloudflare/auth.sql` no Console. São três tabelas adicionais; os dados da loja não são apagados. O SQL pode ser executado novamente com segurança.
+2. Confirme o binding `DB` no Worker `pit-facul`. O ID configurado é `2ec7eee1-df87-4f5b-8506-8c813e3f153b`.
+3. Build: `npm run build`. Deploy: `npx wrangler deploy --config dist/server/wrangler.json`. A integração GitHub da Cloudflare pode usar esses comandos. Não use o fluxo de publicação do ChatGPT para este endereço.
+4. Abra o site e selecione **Ainda não tenho conta**. Crie sua conta com uma senha própria (não a senha do ChatGPT).
+5. Após cadastrar sua conta, execute no Console D1, substituindo o endereço pelo e-mail exato que você cadastrou: `UPDATE users SET role = 'admin' WHERE email = 'SEU_EMAIL_CADASTRADO';`. Recarregue a loja. Não promova contas desconhecidas.
+
+Sessões duram sete dias e são revogadas ao sair. O login limita tentativas por e-mail e IP. Esta versão não inclui confirmação de e-mail ou recuperação de senha; contas antigas sem credenciais não podem ser assumidas apenas informando seu e-mail. O catálogo inicial é preenchido no primeiro acesso autenticado, se estiver vazio. R2 não é necessário.
 
 ## Banco de dados
 
