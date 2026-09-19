@@ -4,13 +4,11 @@ import hostingConfig from "./.openai/hosting.json";
 import { readExecutionProfile } from "./scripts/execution-profile.mjs";
 import { sites } from "./build/sites-vite-plugin";
 
-const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
-  "00000000-0000-4000-8000-000000000000";
-// Na publicação fora do ambiente do Sites, informe o ID do banco D1 pela
-// variável de ambiente do Cloudflare. O valor padrão mantém o preview local.
+// A variável de ambiente permite trocar o banco em outro ambiente; o valor
+// padrão aponta para o banco D1 deste projeto na conta Cloudflare da autora.
 const d1DatabaseId =
   process.env.CLOUDFLARE_D1_DATABASE_ID ??
-  SITE_CREATOR_PLACEHOLDER_DATABASE_ID;
+  "2ec7eee1-df87-4f5b-8506-8c813e3f153b";
 
 const { d1, r2 } = hostingConfig;
 
